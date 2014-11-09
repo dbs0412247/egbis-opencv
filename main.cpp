@@ -1,4 +1,5 @@
 /*
+Copyright (C) 2014 Adrian Yuen
 Copyright (C) 2013 Christoffer Holmstedt
 Copyright (C) 2010 Salik Syed
 Copyright (C) 2006 Pedro Felzenszwalb
@@ -18,12 +19,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
 
-#include <cstdio>
-#include <cstdlib>
 #include <iostream>
-//#include "egbis/image.h"
-//#include "egbis/misc.h"
-//#include "egbis/pnmfile.h"
 #include "egbis/segment-image.hpp"
 
 #include <opencv2/core/core.hpp>
@@ -33,86 +29,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 using namespace cv;
 using namespace std;
 
-/****
- * OpenCV C++ Wrapper using the Mat class
- * TODO: Move this to separate file.
- ***/
-image<rgb>* convertMatToNativeImage(Mat *input){
-    int w = input->cols;
-    int h = input->rows;
-    image<rgb> *im = new image<rgb>(w,h);
-
-    for(int i=0; i<input->rows; i++)
-    {
-        for(int j=0; j<input->cols; j++)
-        {
-            rgb curr;
-            Vec3b intensity = input->at<Vec3b>(i,j);
-            curr.b = intensity.val[0];
-            curr.g = intensity.val[1];
-            curr.r = intensity.val[2];
-            im->data[i+j*w] = curr;
-        }
-    }
-    return im;
-}
-
-Mat convertNativeToMat(image<rgb>* input){
-    int w = input->width();
-    int h = input->height();
-    Mat output(Size(w,h),CV_8UC3);
-
-    for(int i =0; i<w; i++){
-        for(int j=0; j<h; j++){
-            rgb curr = input->data[i+j*w];
-            output.at<Vec3b>(i,j)[0] = curr.b;
-            output.at<Vec3b>(i,j)[1] = curr.g;
-            output.at<Vec3b>(i,j)[2] = curr.r;
-        }
-    }
-
-    return output;
-}
-/*
-Mat runEgbisOnMat(Mat *input, float sigma, float k, int min_size, int *numccs) {
-    int w = input->cols;
-    int h = input->rows;
-    Mat output(Size(w,h),CV_8UC3);
-
-    // 1. Convert to native format
-    image<rgb> *nativeImage = convertMatToNativeImage(input);
-    // 2. Run egbis algoritm
-    image<rgb> *segmentedImage = segment_image(nativeImage, sigma, k, min_size, numccs);
-    // 3. Convert back to Mat format
-//    output = convertNativeToMat(segmentetImage);
-
-    int tmp_w = segmentedImage->width();
-	int tmp_h = segmentedImage->height();
-	Mat tmp_output(Size(tmp_w,tmp_h),CV_8UC3);
-
-	for(int i =0; i<w; i++){
-		for(int j=0; j<h; j++){
-			rgb curr = segmentedImage->data[i+j*tmp_w];
-			tmp_output.at<Vec3b>(i,j)[0] = curr.b;
-			tmp_output.at<Vec3b>(i,j)[1] = curr.g;
-			tmp_output.at<Vec3b>(i,j)[2] = curr.r;
-	}	}
-    return output;
-}
-*/
-/****
- * END OF: OpenCV C++ Wrapper using the Mat class
- ***/
-
 Mat egbisImage;
 Mat img;
-char* imageName;
 int num_ccs;
-
-/****
- * GUI related variables and functions (trackBars/Sliders).
- * TODO: Move this to separate file.
- ***/
 
 int sigma_switch_value = 1;
 int sigma_switch_high = 10;
@@ -202,69 +121,37 @@ void switch_callback_run( int position, void * ){
     }
 }
 
-
-/****
- * END OF: GUI related variables and functions (trackBars/Sliders).
- ***/
-
 /****
  * Main
  ***/
 int main(int argc, char **argv) {
 
-    img = imread( argv[1], CV_LOAD_IMAGE_COLOR );
+	img = imread( argv[1], CV_LOAD_IMAGE_COLOR );
 
-    if( !img.data )
-    {
-        cout << "Could not open or find the image." << std::endl;
-        return -1;
-    }
-
-    // Create the first EGBIS version with standard values.
-    egbisImage = segment_image(&img, 0.5, 500, 200, &num_ccs);
-
-    // 4. Present image
-    namedWindow( "Original" , CV_WINDOW_AUTOSIZE );
-    imshow( "Original" , img );
-
-    // TODO: Change to C++ method
-    // http://docs.opencv.org/modules/highgui/doc/user_interface.html#createtrackbar
-    createTrackbar("Sigma [x/10]","Original", &sigma_switch_value, sigma_switch_high, &switch_callback_sigma);
-    createTrackbar("k","Original", &k_switch_value, k_switch_high, switch_callback_k);
-    createTrackbar("NumC","Original", &numC_switch_value, numC_switch_high, switch_callback_numC);
-    createTrackbar("Run","Original", &run_switch_value, run_switch_high, switch_callback_run);
-    createTrackbar("Save EGBIS image","Original", &save_switch_value, save_switch_high, switch_callback_save);
-
-    namedWindow( "EGBIS", CV_WINDOW_AUTOSIZE );
-    imshow( "EGBIS", egbisImage);
-
-/*
-	float sigma = atof(argv[1]);
-	float k = atof(argv[2]);
-	int min_size = atoi(argv[3]);
-
-	printf("loading input image.\n");
-	//image<rgb> *input = loadPPM(argv[4]);
-	Mat input = imread(argv[4]);
-
-	printf("processing\n");
-	int num_ccs;
-	Mat seg = segment_image(&input, sigma, k, min_size, &num_ccs);
-//savePPM(seg, argv[5]);
-	if (imwrite(argv[5], seg)) {
-		printf("Written to %s\n", argv[5]);
-	} else {
-		printf("Could not write to %s\n", argv[5]);
+	if( !img.data )
+	{
+			cout << "Could not open or find the image." << std::endl;
+			return -1;
 	}
-	printf("Done\n");
 
-	imshow("Original", input);
-	imshow("Test", seg);
+	// Create the first EGBIS version with standard values.
+	egbisImage = segment_image(&img, 0.5, 500, 200, &num_ccs);
 
-	//Mat gray_image;
-	//cvtColor( image, gray_image, CV_BGR2GRAY );
-	//imwrite( "../../images/tempImage.jpg", gray_image );
-*/
+	// 4. Present image
+	namedWindow( "Original" , CV_WINDOW_AUTOSIZE );
+	imshow( "Original" , img );
+
+	// TODO: Change to C++ method
+	// http://docs.opencv.org/modules/highgui/doc/user_interface.html#createtrackbar
+	createTrackbar("Sigma [x/10]","Original", &sigma_switch_value, sigma_switch_high, &switch_callback_sigma);
+	createTrackbar("k","Original", &k_switch_value, k_switch_high, switch_callback_k);
+	createTrackbar("NumC","Original", &numC_switch_value, numC_switch_high, switch_callback_numC);
+	createTrackbar("Run","Original", &run_switch_value, run_switch_high, switch_callback_run);
+	createTrackbar("Save EGBIS image","Original", &save_switch_value, save_switch_high, switch_callback_save);
+
+	namedWindow( "EGBIS", CV_WINDOW_AUTOSIZE );
+	imshow( "EGBIS", egbisImage);
+
 	while(waitKey(1) != 'q'){;}
 	destroyAllWindows();
 

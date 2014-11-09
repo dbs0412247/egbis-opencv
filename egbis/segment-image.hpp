@@ -1,4 +1,5 @@
 /*
+Copyright (C) 2014 Adrian Yuen
 Copyright (C) 2006 Pedro Felzenszwalb
 
 This program is free software; you can redistribute it and/or modify
@@ -22,9 +23,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #include <vector>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/core.hpp>
-#include "image.hpp"
 #include "misc.hpp"
-#include "filter.hpp"
 #include "segment-graph.hpp"
 
 using namespace cv;
