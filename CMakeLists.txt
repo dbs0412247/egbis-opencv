@@ -9,7 +9,7 @@ add_executable( main
   main.cpp  
   egbis/segment-image.hpp 
   egbis/segment-graph.hpp 
-  egbis/disjoint-set.h 
-  egbis/image.h)
+  egbis/disjoint-set.hpp 
+  egbis/image.hpp)
 target_link_libraries( main ${OpenCV_LIBS} )
 
