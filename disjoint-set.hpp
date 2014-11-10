@@ -16,8 +16,8 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 */
 
-#ifndef DISJOINT_SET
-#define DISJOINT_SET
+#ifndef _DISJOINT_SET_HPP_
+#define _DISJOINT_SET_HPP_
 
 // disjoint-set forests using union-by-rank and path compression (sort of).
 

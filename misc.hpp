@@ -18,8 +18,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
 /* random stuff */
 
-#ifndef MISC_H
-#define MISC_H
+#ifndef _MISC_HPP_
+#define _MISC_HPP_
 
 #include <cmath>
 
