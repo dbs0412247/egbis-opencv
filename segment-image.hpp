@@ -28,6 +28,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
 using namespace cv;
 
+static inline float diff(Mat &b, Mat &g, Mat &r,
+			 int x1, int y1, int x2, int y2);
+
 static Vec3b randomColor( RNG& rng )
 {
   int icolor = (unsigned) rng;
@@ -35,15 +38,14 @@ static Vec3b randomColor( RNG& rng )
 }
 
 // dissimilarity measure between pixels
-static inline double diff(vector<Mat> &vMat,
+static inline float diff(vector<Mat> &src,
 			 int x1, int y1, int x2, int y2) {
-	double sum = 0;
-	for (int channel = 0; channel < vMat.size(); channel++) {
-		sum += square(vMat[channel].at(y1,x1) - vMat[channel].at(y2,x2));
+
+	float sum = 0;
+	for (int ch = 0; ch < src.size(); ch++) {
+		sum += square(src[ch].at<uchar>(y1,x1) - src[ch].at<uchar>(y2,x2));
 	}
-	return sqrt( 	square( b.at<uchar>(y1,x1) - b.at<uchar>(y2,x2) ) +
-								square( g.at<uchar>(y1,x1) - g.at<uchar>(y2,x2) ) +
-								square( r.at<uchar>(y1,x1) - r.at<uchar>(y2,x2) ) );
+	return sqrt(sum);
 }
 
 /*
@@ -64,11 +66,10 @@ Mat segment_image(Mat *im, float sigma, float k, int min_size, int *num_ccs) {
 	int cols = im->cols;
 
   // smooth each color channel
-	Mat matSmoothSource;
-	GaussianBlur(*im, matSmoothSource, Size(0,0), sigma);
-	// split into different color channels
-	vector<Mat> vMatImage;
-  split(*im, vMatImage);
+	Mat matSmooth;
+  GaussianBlur(*im, matSmooth, Size(0,0), sigma);
+ 	vector<Mat> vSplit;
+ 	split(matSmooth, vSplit);
 
   // build graph
   edge *edges = new edge[cols*rows*4];
@@ -81,28 +82,28 @@ Mat segment_image(Mat *im, float sigma, float k, int min_size, int *num_ccs) {
       if (c < cols-1) {
       	edges[num].a = r * cols + c;
 				edges[num].b = r * cols + (c+1);
-				edges[num].w = diff(vMatImage, c, r, c+1, 1);
+				edges[num].w = diff(vSplit, c, r, c+1, 1);
 				num++;
       }
 
       if (r < rows-1) {
 				edges[num].a = r * cols + c;
 				edges[num].b = (r+1) * cols + c;
-				edges[num].w = diff(vMatImage, c, r, c, r+1);
+				edges[num].w = diff(vSplit, c, r, c, r+1);
 				num++;
       }
 
       if ((c < cols-1) && (r < rows-1)) {
 				edges[num].a = r * cols + c;
 				edges[num].b = (r+1) * cols + (c+1);
-				edges[num].w = diff(vMatImage, c, r, c+1, r+1);
+				edges[num].w = diff(vSplit, c, r, c+1, r+1);
 				num++;
       }
 
       if ((c < cols-1) && (r > 0)) {
 				edges[num].a = r * cols + c;
 				edges[num].b = (r-1) * cols + (c+1);
-				edges[num].w = diff(vMatImage, c, r, c+1, r-1);
+				edges[num].w = diff(vSplit, c, r, c+1, r-1);
 				num++;
       }
     }
