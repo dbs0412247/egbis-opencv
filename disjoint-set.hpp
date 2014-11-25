@@ -30,6 +30,7 @@ typedef struct {
 class universe {
 public:
   universe(int elements);
+  universe(const universe &u);			 // copy constructor
   ~universe();
   int find(int x);  
   void join(int x, int y);
@@ -49,6 +50,16 @@ universe::universe(int elements) {
     elts[i].size = 1;
     elts[i].p = i;
   }
+}
+
+universe::universe(const universe &u) {
+	elts = new uni_elt[u.num];
+	this->num = u.num;
+	for (int i = 0; i < num; i++) {
+		elts[i].rank = u.elts[i].rank;
+		elts[i].size = u.elts[i].size;
+		elts[i].p = u.elts[i].p;
+	}
 }
   
 universe::~universe() {

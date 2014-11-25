@@ -20,6 +20,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #ifndef _SEGMENT_IMAGE_HPP_
 #define _SEGMENT_IMAGE_HPP_
 
+//Debug
+#include <iostream>
+
 #include <vector>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/core.hpp>
@@ -59,90 +62,94 @@ static inline float diff(vector<Mat> &src,
  * min_size: minimum component size (enforced by post-processing stage).
  * num_ccs: number of connected components in the segmentation.
  */
-Mat segment_image(Mat *im, float sigma, float k, int min_size, int *num_ccs) {
-  //int width = im->width();
-  //int height = im->height();
-	int rows = im->rows;
-	int cols = im->cols;
+void segment_image(Mat &im, float sigma, float k, universe * &u, vector<edge> &edges) {
+
+	int rows = im.rows;
+	int cols = im.cols;
 
   // smooth each color channel
 	Mat matSmooth;
-  GaussianBlur(*im, matSmooth, Size(0,0), sigma);
+  GaussianBlur(im, matSmooth, Size(3,3), sigma);
  	vector<Mat> vSplit;
  	split(matSmooth, vSplit);
 
   // build graph
-  edge *edges = new edge[cols*rows*4];
-  int num = 0;
+ 	if (edges.size() != 0)
+ 		edges.clear();
   //for (int y = 0; y < height; y++) {
   for (int r = 0; r < rows; r++) {
   	//for (int x = 0; x < width; x++) {
   	for (int c = 0; c < cols; c++) {
 
       if (c < cols-1) {
-      	edges[num].a = r * cols + c;
-				edges[num].b = r * cols + (c+1);
-				edges[num].w = diff(vSplit, c, r, c+1, 1);
-				num++;
+      	edge new_edge;
+      	new_edge.a = r * cols + c;
+      	new_edge.b = r * cols + (c+1);
+      	new_edge.w = diff(vSplit, c, r, c+1, 1);
+      	edges.push_back(new_edge);
       }
 
       if (r < rows-1) {
-				edges[num].a = r * cols + c;
-				edges[num].b = (r+1) * cols + c;
-				edges[num].w = diff(vSplit, c, r, c, r+1);
-				num++;
+      	edge new_edge;
+      	new_edge.a = r * cols + c;
+      	new_edge.b = (r+1) * cols + c;
+      	new_edge.w = diff(vSplit, c, r, c, r+1);
+      	edges.push_back(new_edge);
       }
 
       if ((c < cols-1) && (r < rows-1)) {
-				edges[num].a = r * cols + c;
-				edges[num].b = (r+1) * cols + (c+1);
-				edges[num].w = diff(vSplit, c, r, c+1, r+1);
-				num++;
+      	edge new_edge;
+      	new_edge.a = r * cols + c;
+      	new_edge.b = (r+1) * cols + (c+1);
+      	new_edge.w = diff(vSplit, c, r, c+1, r+1);
+      	edges.push_back(new_edge);
       }
 
       if ((c < cols-1) && (r > 0)) {
-				edges[num].a = r * cols + c;
-				edges[num].b = (r-1) * cols + (c+1);
-				edges[num].w = diff(vSplit, c, r, c+1, r-1);
-				num++;
+      	edge new_edge;
+      	new_edge.a = r * cols + c;
+      	new_edge.b = (r-1) * cols + (c+1);
+      	new_edge.w = diff(vSplit, c, r, c+1, r-1);
+      	edges.push_back(new_edge);
       }
     }
-  }
-
+  } // end buld graph
   // segment
-  universe *u = segment_graph(cols*rows, num, edges, k);
-  
-  // post process small components
-  for (int i = 0; i < num; i++) {
-    int a = u->find(edges[i].a);
-    int b = u->find(edges[i].b);
-    if ((a != b) && ((u->size(a) < min_size) || (u->size(b) < min_size)))
-      u->join(a, b);
-  }
-  delete [] edges;
-  *num_ccs = u->num_sets();
-
-  Mat output (rows, cols, CV_8UC3);
-
-  // pick random colors for each component
-  // NOTE: not actually random; segment_image is colored with
-  // the same sequence...
-  RNG rngColor (0xFFFFFFFF);
-  Vec3b colors [cols*rows];
-  for (int i = 0; i < cols*rows; i++) {
-    colors[i] = randomColor(rngColor);
-  }
-
-  for (int r = 0; r < rows; r++) {
-    for (int c = 0; c < cols; c++) {
-      int comp = u->find(r * cols + c);
-      output.at<Vec3b>(r,c) = colors[comp];
-    }
-  }  
-
-  delete u;
-
-  return output;
+  u = segment_graph(cols*rows, edges.size(), &(edges[0]), k);
 }
+
+void post_process_image (universe *u, vector<edge> edges, int min_size, int *num_ccs = NULL) {
+// post process small component
+	for (int i = 0; i < edges.size(); i++) {
+		int a = u->find(edges[i].a);
+		int b = u->find(edges[i].b);
+		if ((a != b) && ((u->size(a) < min_size) || (u->size(b) < min_size)))
+			u->join(a, b);
+	}
+	if (num_ccs != NULL)
+		*num_ccs = u->num_sets();
+}
+
+Mat create_segmented_image (int rows, int cols, universe *u) {
+	Mat output (rows, cols, CV_8UC3);
+
+	// pick random colors for each component
+	// NOTE: not actually random; segment_image is colored with
+	// the same sequence...
+	RNG rngColor (0xFFFFFFFF);
+	Vec3b colors [cols*rows];
+	for (int i = 0; i < cols*rows; i++) {
+		colors[i] = randomColor(rngColor);
+	}
+
+	for (int r = 0; r < rows; r++) {
+		for (int c = 0; c < cols; c++) {
+			int comp = u->find(r * cols + c);
+			output.at<Vec3b>(r,c) = colors[comp];
+		}
+	}
+	return output;
+}
+
 
 #endif

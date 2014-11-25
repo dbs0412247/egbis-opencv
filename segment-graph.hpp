@@ -67,10 +67,10 @@ universe *segment_graph(int num_vertices, int num_edges, edge *edges,
     int b = u->find(pedge->b);
     if (a != b) {
       if ((pedge->w <= threshold[a]) &&
-	  (pedge->w <= threshold[b])) {
-	u->join(a, b);
-	a = u->find(a);
-	threshold[a] = pedge->w + THRESHOLD(u->size(a), k);
+      		(pedge->w <= threshold[b])) {
+      	u->join(a, b);
+      	a = u->find(a);
+      	threshold[a] = pedge->w + THRESHOLD(u->size(a), k);
       }
     }
   }
